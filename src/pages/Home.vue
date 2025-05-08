@@ -1,5 +1,11 @@
 <template>
-  <div class="min-h-screen bg-white font-sans">
+  <div
+      class="min-h-screen bg-white font-sans"
+      @contextmenu.prevent
+      @dragstart.prevent
+      @touchstart.prevent
+      @selectstart.prevent
+    >
 
     <!-- BANNER SLIDER -->
     <div class="h-40 bg-gray-100 relative overflow-hidden">
@@ -126,25 +132,47 @@
         <img :src="flyImage" class="w-full h-full object-contain rounded-full shadow-lg" />
       </div>
 
-     <!-- PRODUTU DETALLE & MODAL -->
-     <div v-if="selectedProduct" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" @click.self="selectedProduct = null">
-      <div class="bg-white rounded-xl shadow-lg p-6 max-w-md w-full relative">
-        <button class="absolute top-2 right-2 text-gray-600 hover:text-red-600" @click="selectedProduct = null">
-          &times;
-        </button>
-        
-        <!-- Imagen Produtu -->
-        <img :src="selectedProduct.image" class="w-full h-56 object-contain mb-4 rounded" />
-        
-        <!-- Divider -->
-        <div class="border-t border-gray-300 my-4"></div>
-        
-        <!-- Produtu Detalle -->
-        <h3 class="text-xl font-bold mb-1">{{ selectedProduct.name }}</h3>
-        <p class="text-gray-700 mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
-        <p class="text-gray-600 text-sm">Deskrisaun: {{ selectedProduct.description || 'La iha deskrisaun' }}</p>
-      </div>
-    </div>
+    <!-- PRODUTU DETALLE & MODAL -->
+        <div
+          v-if="selectedProduct"
+          class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          @click.self="selectedProduct = null"
+        >
+          <div class="bg-white rounded-xl shadow-lg p-6 max-w-md w-full relative">
+            <!-- Tombol X Tutup (lebih besar) -->
+            <button
+              class="absolute top-3 right-3 text-gray-600 hover:text-red-600 text-4xl font-extrabold"
+              @click="selectedProduct = null"
+            >
+              &times;
+            </button>
+
+            <!-- Imagen Produtu -->
+            <img :src="selectedProduct.image" class="w-full h-56 object-contain mb-4 rounded" />
+
+            <!-- Divider -->
+            <div class="border-t border-gray-300 my-4"></div>
+
+            <!-- Lista Naran Produtu & Butaun + Karosa (besar) -->
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-2xl font-bold">{{ selectedProduct.name }}</h3>
+              <button
+                @click.stop="addToCart(selectedProduct, $event)"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl text-lg font-bold flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+                </svg>
+                Karosa
+              </button>
+            </div>
+
+            <!-- Info Lain -->
+            <p class="text-gray-700 text-lg mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
+            <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || 'La iha deskrisaun' }}</p>
+          </div>
+        </div>
+
 
     <!-- SIDEBAR CART -->
       <CartSidebar :visible="showCart" @close="toggleCart" @checkout="showCheckout = true" />
@@ -199,14 +227,19 @@ let placeholderIndex = 0
 
 const toggleCart = () => showCart.value = !showCart.value
 
+const enterFullscreen = () => {
+  const el = document.documentElement
+  if (el.requestFullscreen) el.requestFullscreen()
+}
+
 const addToCart = (product, event) => {
   cartStore.addToCart(product)
 
-  const productCard = event.currentTarget.closest('.product-card')
+  const sourceElement = event.currentTarget.closest('.product-card') || event.currentTarget
   const cartIcon = document.querySelector('.cart-icon')?.getBoundingClientRect()
-  if (!productCard || !cartIcon) return
+  if (!sourceElement || !cartIcon) return
 
-  const rect = productCard.getBoundingClientRect()
+  const rect = sourceElement.getBoundingClientRect()
 
   flyImage.value = product.image
   flyTop.value = rect.top
@@ -238,6 +271,7 @@ const formatPrice = (value) => `$ ${value.toFixed(2)}`
 
 onMounted(async () => {
   setInterval(() => {
+    document.addEventListener('gesturestart', e => e.preventDefault())
     placeholderIndex = (placeholderIndex + 1) % placeholderList.length
     placeholderText.value = placeholderList[placeholderIndex]
   }, 3000)
@@ -280,13 +314,18 @@ onMounted(async () => {
 
 <style scoped>
 body {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none; 
+  -webkit-user-drag: none;     
   font-family: 'Helvetica Neue', sans-serif;
 }
 
 html {
-  touch-action: manipulation;
   overscroll-behavior: none;
-  user-select: none;
+  touch-action: none;
+  user-select: none; 
+ 
 }
 
 @keyframes progressBar {
