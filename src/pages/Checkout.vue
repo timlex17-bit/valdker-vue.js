@@ -6,8 +6,8 @@
       <div class="mb-4">
         <label class="font-medium text-gray-700 mb-2 block">Metode Pagamentu:</label>
         <select v-model="payment" class="w-full border rounded px-4 py-2">
-          <option value="cash">💵 Cash</option>
-          <option value="qris">📱 QRIS MOSAN</option>
+          <option value="cash">💵 Cash - (Selu Iha Kasir) </option>
+          <option value="qris">📱 QRIS MOSAN- (Scan / Uza Aplikasaun Mosan)</option>
           <option value="bnctl">🏦 Transferensia - BNCTL</option>
           <option value="mandiri">🏦 Transferensia - Mandiri</option>
           <option value="bnu">🏦 Transferensia - BNU</option>
@@ -73,7 +73,7 @@
       return
     }
   
-    alert(`Metode: ${payment.value.toUpperCase()}\nTotal: $${total.value.toFixed(2)}\n✅ Transaksi berhasil!`)
+    alert(`Metode: ${payment.value.toUpperCase()}\nTotal: $${total.value.toFixed(2)}\n✅ Pagamentu Susesu!`)
     cartStore.clearCart()
     router.push('/')
   }

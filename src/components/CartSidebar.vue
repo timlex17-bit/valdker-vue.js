@@ -54,18 +54,26 @@
           </ul>
         </div>
   
-        <!-- Footer -->
+        <!-- Button Pagamentu & Kansela Order -->
         <div class="p-4 border-t">
           <div class="flex justify-between font-semibold text-lg mb-3">
             <span>Total:</span>
             <span>$ {{ total.toFixed(2) }}</span>
           </div>
+
+          <!-- Tombol Pagamentu -->
           <button
-            @click="goToCheckout"
-            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded mb-2"
+            @click="$emit('checkout')"
+            :disabled="total === 0"
+            class="w-full py-3 rounded font-bold mb-3 transition
+              text-white
+              bg-green-600 hover:bg-green-700
+              disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             ✅ Pagamentu
           </button>
+
+          <!-- Tombol Kansela -->
           <button
             @click="cartStore.clearCart()"
             class="w-full text-red-600 border border-red-400 py-2 rounded hover:bg-red-50"
@@ -75,6 +83,7 @@
         </div>
       </div>
     </transition>
+
   </template>
   
   <script setup>
