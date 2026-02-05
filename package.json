@@ -1,13 +1,40 @@
 {
   "name": "pos-varandafood",
+  "version": "1.0.0",
+  "description": "VARANDAFOOD POS desktop app",
+  "author": "Rivaldo Guterres",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+  "type": "commonjs",
+  "main": "electron/main.js", 
+  "build": {
+    "appId": "com.varandafood.pos",
+    "productName": "VarandaPOS",
+    "files": [
+      "dist/**/*",
+      {
+        "from": "electron",
+        "to": "electron"
+      }
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
+
+  "scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
+  "clean-dist": "rimraf dist/win-unpacked",
+  "electron": "electron .",
+  "start": "concurrently \"npm run dev\" \"npm run electron\"",
+  "pack": "electron-builder --dir",
+  "dist": "npm run clean-dist && vite build && cross-env NODE_ENV=production electron-builder --win"
+  },
+
   "dependencies": {
     "axios": "^1.9.0",
     "pinia": "^3.0.2",
@@ -18,7 +45,12 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.2",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.6.0",
     "postcss": "^8.5.3",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.1",
     "vite": "^6.3.1"
   }
