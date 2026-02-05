@@ -170,14 +170,16 @@
   </Teleport>
 </template>
 
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from "vue-router"
 import { fetchProducts, fetchCategories, fetchBanners } from '@/services/api'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
 import CartSidebar from '@/components/CartSidebar.vue'
 import Checkout from '@/pages/Checkout.vue'
+
+const router = useRouter()
 
 const flyToCart = ref(false)
 const flyImage = ref('')
@@ -267,6 +269,14 @@ onMounted(async () => {
   document.addEventListener('selectstart', e => e.preventDefault())
   document.addEventListener('gesturestart', e => e.preventDefault())
 
+  // ✅ DEFENSIVE: kalau token kosong, jangan fetch (hindari 401)
+  const token = localStorage.getItem("token")
+  if (!token) {
+    router.replace({ path: "/login", query: { next: "/home" } })
+    loading.value = false
+    return
+  }
+
   setInterval(() => {
     placeholderIndex = (placeholderIndex + 1) % placeholderList.length
     placeholderText.value = placeholderList[placeholderIndex]
@@ -306,7 +316,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
 </script>
 
 <style scoped>

@@ -77,18 +77,20 @@ router.beforeEach((to) => {
   const isPublic = !!to.meta?.public
   const needsAuth = !!to.meta?.requiresAuth
 
+  // ✅ FIX: kalau sudah login lalu buka /login → langsung ke /tablet
+  // (harus diletakkan sebelum isPublic return)
+  if (to.path === "/login" && auth.isLoggedIn) {
+    return "/tablet"
+  }
+
   if (isPublic) return true
+
   if (needsAuth && !auth.isLoggedIn) {
     return {
       path: "/login",
       query: { next: to.fullPath },
     }
   }
-
-  // kalau sudah login lalu buka /login → langsung ke /pos
-  if (to.path === "/login" && auth.isLoggedIn) {
-  return "/tablet"
-}
 
   return true
 })

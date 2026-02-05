@@ -127,7 +127,7 @@
 
               <div class="pt-3 border-t text-sm text-gray-500">
                 Setelah login sukses, kamu akan diarahkan ke:
-                <span class="font-extrabold text-gray-700">/pos</span>
+                <span class="font-extrabold text-gray-700">/tablet</span>
               </div>
             </form>
           </section>
@@ -161,7 +161,7 @@ onMounted(() => {
   auth.loadFromStorage()
 
   if (auth.isLoggedIn) {
-    router.replace("/pos")
+    router.replace("/tablet")
     return
   }
 
@@ -169,8 +169,8 @@ onMounted(() => {
 })
 
 const fillDemo = () => {
-  form.value.username = "Jeremiass"
-  form.value.password = "1234"
+  form.value.username = "admin"
+  form.value.password = "admin"
   error.value = ""
 }
 
@@ -178,12 +178,29 @@ const onSubmit = async () => {
   error.value = ""
   loading.value = true
   try {
-    await auth.login({
+    // ✅ pastikan auth.login mengembalikan data (kalau store kamu return response)
+    const res = await auth.login({
       username: form.value.username,
       password: form.value.password,
     })
 
-    const next = route.query?.next ? String(route.query.next) : "/pos"
+    // ✅ safety net: kalau store belum simpan token, simpan di sini
+    // (support token / auth_token)
+    const token =
+      res?.token ||
+      res?.data?.token ||
+      res?.auth_token ||
+      res?.data?.auth_token ||
+      ""
+
+    if (token) {
+      localStorage.setItem("token", token)
+      const user = res?.user || res?.data?.user || {}
+      localStorage.setItem("user", JSON.stringify(user))
+      auth.loadFromStorage()
+    }
+
+    const next = route.query?.next ? String(route.query.next) : "/tablet"
     router.replace(next)
   } catch (e) {
     error.value = e?.message || "Login gagal."

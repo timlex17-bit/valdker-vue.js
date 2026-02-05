@@ -496,7 +496,6 @@ const closeProfileMenu = () => {
 }
 
 const goChangePassword = () => {
-  // nanti kalau sudah ada halaman change password, tinggal ganti route
   closeProfileMenu()
   alert("Change Password (coming soon)")
 }
@@ -694,6 +693,14 @@ onMounted(async () => {
   // load auth info
   auth.loadFromStorage()
   document.addEventListener("click", onDocClick, true)
+
+  // ✅ DEFENSIVE: kalau token kosong, jangan fetch (hindari 401)
+  const token = localStorage.getItem("token")
+  if (!token) {
+    router.replace({ path: "/login", query: { next: "/tablet" } })
+    loading.value = false
+    return
+  }
 
   focusBarcode()
 
