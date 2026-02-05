@@ -19,18 +19,25 @@ const routes = [
     meta: { public: true },
   },
 
-  // (opsional) kamu bisa protect juga kalau mau
+  // 🔴 ROOT → langsung ke tablet
   {
     path: "/",
-    name: "home",
-    component: Home,
+    redirect: "/tablet",
+  },
+
+  // 🔴 POS TABLET (URL utama tablet)
+  {
+    path: "/tablet",
+    name: "tablet",
+    component: PosTablet,
     meta: { requiresAuth: true },
   },
 
+  // (opsional) kalau masih mau simpan Home versi desktop
   {
-    path: "/pos",
-    name: "pos-tablet",
-    component: PosTablet,
+    path: "/home",
+    name: "home",
+    component: Home,
     meta: { requiresAuth: true },
   },
 
@@ -80,8 +87,8 @@ router.beforeEach((to) => {
 
   // kalau sudah login lalu buka /login → langsung ke /pos
   if (to.path === "/login" && auth.isLoggedIn) {
-    return "/pos"
-  }
+  return "/tablet"
+}
 
   return true
 })
