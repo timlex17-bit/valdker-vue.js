@@ -8,8 +8,9 @@
   >
     <!-- MAIN WRAP -->
     <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6">
-      <!-- LEFT SIDEBAR -->
-      <aside class="w-full lg:w-[280px] shrink-0">
+      <!-- LEFT SIDEBAR (✅ DISHIDE DI ANDROID / MOBILE) -->
+      <aside class="hidden w-full lg:w-[280px] shrink-0">
+
         <div
           class="bg-white rounded-3xl shadow-sm border p-4 lg:p-6
                  h-auto lg:h-[calc(100vh-3rem)] flex flex-col"
@@ -342,7 +343,7 @@
         </div>
 
         <p class="text-gray-700 text-lg mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
-        <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || 'La iha deskrisaun' }}</p>
+        <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || "La iha deskrisaun" }}</p>
       </div>
     </div>
 
