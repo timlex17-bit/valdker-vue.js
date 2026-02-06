@@ -1,10 +1,15 @@
 import axios from "axios"
 
-// ✅ fallback aman kalau env tidak kebaca
+// ✅ base URL:
+// - DEV: baca dari .env.development (VITE_API_BASE_URL)
+// - PROD: baca dari .env.production (VITE_API_BASE_URL)
+// - fallback terakhir: kalau dev -> localhost:8000, kalau prod -> onrender
+const isDev = import.meta.env.DEV
+
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "https://valdker.onrender.com"
+  (isDev ? "http://127.0.0.1:8000" : "https://valdker.onrender.com")
 
 // ✅ daftar endpoint PUBLIC (tanpa token)
 const PUBLIC_ENDPOINTS = [
@@ -14,7 +19,6 @@ const PUBLIC_ENDPOINTS = [
 
 // helper: cek URL termasuk public endpoint atau tidak
 const isPublicEndpoint = (url = "") => {
-  // url bisa "/api/auth/login" atau full url
   return PUBLIC_ENDPOINTS.some((p) => url.includes(p))
 }
 
@@ -29,9 +33,9 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const url = config.url || ""
-    const full = `${config.baseURL}${url}`
+    const full = `${config.baseURL || ""}${url}`
 
-    // ✅ JANGAN kirim token ke endpoint public (login)
+    // ✅ JANGAN kirim token ke endpoint public (login/register)
     if (isPublicEndpoint(url) || isPublicEndpoint(full)) {
       console.log("PUBLIC REQ (skip auth):", config.method?.toUpperCase(), full)
       return config
@@ -41,7 +45,6 @@ api.interceptors.request.use(
     console.log("TOKEN(localStorage):", token)
 
     if (token) {
-      // ✅ paling kompatibel lintas axios v1
       config.headers = config.headers || {}
       config.headers.Authorization = `Token ${token}`
       console.log("AUTH(header set):", config.headers.Authorization)
@@ -72,7 +75,6 @@ api.interceptors.response.use(
       if (!isPublicEndpoint(url) && !isPublicEndpoint(full)) {
         localStorage.removeItem("token")
         localStorage.removeItem("user")
-        // optional: redirect ke /login
         // window.location.href = "/login"
       }
       */

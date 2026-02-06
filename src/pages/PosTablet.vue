@@ -25,72 +25,9 @@
 
           <div class="text-sm font-bold text-gray-400 mb-3 lg:mb-4">Menu</div>
 
-          <!-- Categories -->
-          <!-- ✅ FIX: drag scroll + tap tetap bisa -->
-          <div
-            ref="catScrollRef"
-            class="ios-scroll drag-scroll flex flex-nowrap lg:flex-col gap-2
-                   overflow-x-auto lg:overflow-y-auto
-                   pb-2 lg:pb-0 pr-0 lg:pr-1
-                   min-h-0"
-            @mousedown="onCatMouseDown"
-            @mousemove="onCatMouseMove"
-            @mouseup="onCatMouseUp"
-            @mouseleave="onCatMouseUp"
-            @touchstart.passive="onCatTouchStart"
-            @touchmove="onCatTouchMove"
-            @touchend="onCatTouchEnd"
-            @touchcancel="onCatTouchEnd"
-          >
-            <!-- inner track -->
-            <div class="flex flex-nowrap lg:flex-col gap-2 w-max lg:w-full">
-              <!-- ALL -->
-              <button
-                class="cat-btn shrink-0 w-[220px] sm:w-[240px] lg:w-full
-                       h-14 rounded-2xl border flex items-center gap-4 px-4
-                       transition active:scale-[0.99]"
-                :class="selectedCategory === null
-                  ? 'bg-orange-500 border-orange-500 text-white shadow-sm'
-                  : 'bg-white border-gray-200 text-gray-800 hover:border-gray-300'"
-                @click="onClickAll"
-              >
-                <div
-                  class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20"
-                  :class="selectedCategory === null ? '' : 'bg-gray-50'"
-                >
-                  <span class="text-lg">🍽️</span>
-                </div>
-                <div class="font-extrabold">All</div>
-              </button>
-
-              <button
-                v-for="cat in categories"
-                :key="cat.id"
-                class="cat-btn shrink-0 w-[220px] sm:w-[240px] lg:w-full
-                       h-14 rounded-2xl border flex items-center gap-4 px-4
-                       transition active:scale-[0.99]"
-                :class="selectedCategory === cat.id
-                  ? 'bg-orange-500 border-orange-500 text-white shadow-sm'
-                  : 'bg-white border-gray-200 text-gray-800 hover:border-gray-300'"
-                @click="onClickCategory(cat.id)"
-              >
-                <div
-                  class="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden"
-                  :class="selectedCategory === cat.id ? 'bg-white/20' : 'bg-gray-50'"
-                >
-                  <img
-                    :src="cat.icon || '/placeholder.png'"
-                    class="w-6 h-6 object-contain"
-                    draggable="false"
-                  />
-                </div>
-
-                <div class="min-w-0 text-left">
-                  <div class="font-bold truncate">{{ cat.name }}</div>
-                  <div class="text-xs opacity-70 truncate">Category</div>
-                </div>
-              </button>
-            </div>
+          <!-- ✅ Categories DIHILANGKAN -->
+          <div class="text-sm text-gray-500">
+            Kategoria iha Android (Hybrid).
           </div>
 
           <div class="my-4 lg:my-6 border-t hidden lg:block"></div>
@@ -252,7 +189,9 @@
                   </div>
 
                   <div class="mt-4 flex items-center justify-between gap-3">
-                    <div class="text-xl sm:text-2xl font-extrabold whitespace-nowrap">{{ formatPrice(product.price) }}</div>
+                    <div class="text-xl sm:text-2xl font-extrabold whitespace-nowrap">
+                      {{ formatPrice(product.price) }}
+                    </div>
 
                     <button
                       class="h-10 px-5 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-sm active:scale-[0.99] shrink-0"
@@ -431,7 +370,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { fetchProducts, fetchCategories } from "@/services/api"
+import { fetchProducts } from "@/services/api" // ✅ categories dihapus
 import { useCartStore } from "@/stores/cart"
 import { storeToRefs } from "pinia"
 import Checkout from "@/pages/Checkout.vue"
@@ -446,8 +385,6 @@ const cartStore = useCartStore()
 const { items: cart, total } = storeToRefs(cartStore)
 
 const products = ref([])
-const categories = ref([])
-const selectedCategory = ref(null)
 const loading = ref(true)
 
 const selectedProduct = ref(null)
@@ -456,19 +393,6 @@ const showCartDrawer = ref(false)
 
 const search = ref("")
 const barcodeRef = ref(null)
-
-const catScrollRef = ref(null)
-
-// ✅ drag state (tap tetap bisa kalau tidak ada drag)
-const drag = ref({
-  isDown: false,
-  startX: 0,
-  startScrollLeft: 0,
-  moved: false,
-  // touch
-  touchStartX: 0,
-  touchStartScrollLeft: 0,
-})
 
 const flyToCart = ref(false)
 const flyImage = ref("")
@@ -490,7 +414,6 @@ const displayRole = computed(() => auth.user?.role || "cashier")
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value
 }
-
 const closeProfileMenu = () => {
   showProfileMenu.value = false
 }
@@ -589,84 +512,16 @@ const decreaseQty = (id) => {
   }
 }
 
-const filterByCategory = (categoryId) => {
-  selectedCategory.value = categoryId
-  focusBarcode()
-}
-
 const filteredProducts = computed(() =>
   products.value.filter((p) => {
     const q = search.value.trim().toLowerCase()
     const nameOk = !q || p.name.toLowerCase().includes(q)
-    const catOk = !selectedCategory.value || p.category_id === selectedCategory.value
-    return nameOk && catOk
+    return nameOk
   })
 )
 
 const formatPrice = (value) => `$ ${Number(value || 0).toFixed(2)}`
 const showProductDetail = (product) => (selectedProduct.value = product)
-
-// ✅ klik kategori: jalan hanya kalau bukan habis drag
-const onClickAll = () => {
-  if (drag.value.moved) return
-  selectedCategory.value = null
-  focusBarcode()
-}
-const onClickCategory = (id) => {
-  if (drag.value.moved) return
-  filterByCategory(id)
-}
-
-// ✅ MOUSE drag
-const onCatMouseDown = (e) => {
-  if (window.matchMedia("(min-width: 1024px)").matches) return
-  const el = catScrollRef.value
-  if (!el) return
-  drag.value.isDown = true
-  drag.value.startX = e.clientX
-  drag.value.startScrollLeft = el.scrollLeft
-  drag.value.moved = false
-}
-const onCatMouseMove = (e) => {
-  if (!drag.value.isDown) return
-  const el = catScrollRef.value
-  if (!el) return
-  const dx = e.clientX - drag.value.startX
-  if (Math.abs(dx) > 6) drag.value.moved = true
-  el.scrollLeft = drag.value.startScrollLeft - dx
-}
-const onCatMouseUp = () => {
-  if (!drag.value.isDown) return
-  drag.value.isDown = false
-  setTimeout(() => (drag.value.moved = false), 0)
-}
-
-// ✅ TOUCH drag
-const onCatTouchStart = (e) => {
-  if (window.matchMedia("(min-width: 1024px)").matches) return
-  const el = catScrollRef.value
-  if (!el) return
-  const t = e.touches?.[0]
-  if (!t) return
-  drag.value.touchStartX = t.clientX
-  drag.value.touchStartScrollLeft = el.scrollLeft
-  drag.value.moved = false
-}
-const onCatTouchMove = (e) => {
-  const el = catScrollRef.value
-  if (!el) return
-  const t = e.touches?.[0]
-  if (!t) return
-  const dx = t.clientX - drag.value.touchStartX
-  if (Math.abs(dx) > 6) {
-    drag.value.moved = true
-    e.preventDefault()
-  }
-  el.scrollLeft = drag.value.touchStartScrollLeft - dx
-}
-const onCatTouchEnd = () => {
-  setTimeout(() => (drag.value.moved = false), 0)
-}
 
 const addToCart = (product, event) => {
   cartStore.addToCart(product)
@@ -690,11 +545,9 @@ const addToCart = (product, event) => {
 }
 
 onMounted(async () => {
-  // load auth info
   auth.loadFromStorage()
   document.addEventListener("click", onDocClick, true)
 
-  // ✅ DEFENSIVE: kalau token kosong, jangan fetch (hindari 401)
   const token = localStorage.getItem("token")
   if (!token) {
     router.replace({ path: "/login", query: { next: "/tablet" } })
@@ -710,7 +563,7 @@ onMounted(async () => {
   }, 6000)
 
   try {
-    const [productRes, categoryRes] = await Promise.all([fetchProducts(), fetchCategories()])
+    const productRes = await fetchProducts()
 
     products.value = productRes.data.map((p) => ({
       id: p.id,
@@ -718,13 +571,6 @@ onMounted(async () => {
       image: p.image_url || "/placeholder.png",
       price: Number(p.sell_price),
       description: p.description || "",
-      category_id: p.category?.id || null,
-    }))
-
-    categories.value = categoryRes.data.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      icon: cat.icon_url || "/placeholder.png",
     }))
   } catch (err) {
     console.error("Gagal fetch:", err)
@@ -740,31 +586,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* iPad/Safari friendly horizontal scroll */
-.ios-scroll {
-  -webkit-overflow-scrolling: touch;
-  overflow-x: auto;
-  overflow-y: hidden;
-  touch-action: pan-x;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-}
-.ios-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.drag-scroll {
-  cursor: grab;
-}
-.drag-scroll:active {
-  cursor: grabbing;
-}
-
-.cat-btn {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Dropdown + Drawer animations */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.15s ease;
