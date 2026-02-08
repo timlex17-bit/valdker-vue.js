@@ -492,17 +492,36 @@ function onCheckoutSuccess() {
   focusBarcode()
 }
 
-const openCartDrawer = () => (showCartDrawer.value = true)
-const closeCartDrawer = () => (showCartDrawer.value = false)
+const openCartDrawer = () => {
+  showCartDrawer.value = true
+  sendCartOpenToAndroid(true)
+}
+
+const closeCartDrawer = () => {
+  showCartDrawer.value = false
+  sendCartOpenToAndroid(false)
+}
+
+window.__closeCart = () => {
+  closeCartDrawer()
+}
+
+const sendCartOpenToAndroid = (open) => {
+  try {
+    if (window.AndroidBridge && typeof window.AndroidBridge.setCartOpen === "function") {
+      window.AndroidBridge.setCartOpen(open ? 1 : 0)
+    }
+  } catch (e) {}
+}
 
 const continuePayment = () => {
-  showCartDrawer.value = false
+  closeCartDrawer()
   showCheckout.value = true
 }
 
 const cancelOrder = () => {
   cartStore.clearCart?.()
-  showCartDrawer.value = false
+  closeCartDrawer()
   focusBarcode()
 }
 
@@ -551,7 +570,9 @@ const showProductDetail = (product) => (selectedProduct.value = product)
 // dipanggil dari Android (btnCart)
 window.__openCart = () => {
   showCartDrawer.value = true
+  sendCartOpenToAndroid(true)
 }
+
 
 window.__filterCategory = (id) => {
   selectedCategory.value = String(id || "all")
