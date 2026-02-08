@@ -210,14 +210,17 @@
     </div>
 
     <!-- ✅ CART DRAWER (slide) -->
-    <!-- ✅ CART DRAWER (slide) -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showCartDrawer" class="fixed inset-0 z-[60]">
-          <!-- ✅ Background overlay HARUS bisa di-klik untuk close -->
+        <div
+          v-if="showCartDrawer"
+          class="fixed inset-0 z-[9999]"
+          style="margin:0; padding:0;"
+        >
+          <!-- ✅ klik di luar untuk close -->
           <button
             type="button"
-            class="absolute inset-0 bg-black/40"
+            class="absolute inset-0 bg-black/40 z-[9999]"
             @click="closeCartDrawer"
             aria-label="Close cart"
           ></button>
@@ -225,16 +228,17 @@
           <Transition name="slide-right">
             <aside
               v-if="showCartDrawer"
-              class="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-2xl border-l flex flex-col"
-              style="padding-bottom: env(safe-area-inset-bottom);"
+              class="absolute right-0 top-0 bottom-0 z-[10000]
+                    w-full sm:w-[420px] bg-white shadow-2xl border-l flex flex-col"
+              style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);"
             >
+              <!-- header -->
               <div class="p-4 border-b flex items-center justify-between">
                 <div>
                   <div class="text-lg font-extrabold">Cart</div>
                   <div class="text-xs text-gray-500">{{ cartCount }} items</div>
                 </div>
 
-                <!-- ✅ Close button pasti bisa -->
                 <button
                   class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 text-2xl leading-none font-extrabold"
                   @click="closeCartDrawer"
@@ -244,6 +248,7 @@
                 </button>
               </div>
 
+              <!-- body -->
               <div class="flex-1 min-h-0 overflow-y-auto p-4">
                 <div v-if="cartItems.length === 0" class="text-sm text-gray-500 py-10 text-center">
                   Karosa Mamuk...
@@ -287,7 +292,7 @@
                 </div>
               </div>
 
-              <!-- ✅ Footer pasti kelihatan (kasih pb ekstra untuk Android bottom bar) -->
+              <!-- footer -->
               <div class="p-4 border-t space-y-3 pb-24">
                 <div class="flex items-center justify-between text-sm">
                   <span class="text-gray-600">Subtotal</span>
@@ -302,7 +307,6 @@
                   Kontinua Pagamentu
                 </button>
 
-                <!-- ✅ Ini yang kamu bilang hilang -->
                 <button
                   class="w-full h-12 rounded-2xl border border-gray-200 hover:bg-gray-50 font-extrabold disabled:opacity-40"
                   :disabled="cartCount === 0"
