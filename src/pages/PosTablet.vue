@@ -210,100 +210,113 @@
     </div>
 
     <!-- ✅ CART DRAWER (slide) -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div v-if="showCartDrawer" class="fixed inset-0 z-[60]" @click.self="closeCartDrawer">
-          <div class="absolute inset-0 bg-black/40"></div>
+    <!-- ✅ CART DRAWER (slide) -->
+<Teleport to="body">
+  <Transition name="fade">
+    <div v-if="showCartDrawer" class="fixed inset-0 z-[60]">
+      <!-- ✅ Background overlay HARUS bisa di-klik untuk close -->
+      <button
+        type="button"
+        class="absolute inset-0 bg-black/40"
+        @click="closeCartDrawer"
+        aria-label="Close cart"
+      ></button>
 
-          <Transition name="slide-right">
-            <aside
-              v-if="showCartDrawer"
-              class="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-2xl border-l flex flex-col"
+      <Transition name="slide-right">
+        <aside
+          v-if="showCartDrawer"
+          class="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-2xl border-l flex flex-col"
+          style="padding-bottom: env(safe-area-inset-bottom);"
+        >
+          <div class="p-4 border-b flex items-center justify-between">
+            <div>
+              <div class="text-lg font-extrabold">Cart</div>
+              <div class="text-xs text-gray-500">{{ cartCount }} items</div>
+            </div>
+
+            <!-- ✅ Close button pasti bisa -->
+            <button
+              class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 text-2xl leading-none font-extrabold"
+              @click="closeCartDrawer"
+              title="Close"
             >
-              <div class="p-4 border-b flex items-center justify-between">
-                <div>
-                  <div class="text-lg font-extrabold">Cart</div>
-                  <div class="text-xs text-gray-500">{{ cartCount }} items</div>
-                </div>
-                <button
-                  class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 text-2xl leading-none font-extrabold"
-                  @click="closeCartDrawer"
-                  title="Close"
-                >
-                  ×
-                </button>
-              </div>
+              ×
+            </button>
+          </div>
 
-              <div class="flex-1 min-h-0 overflow-y-auto p-4">
-                <div v-if="cartItems.length === 0" class="text-sm text-gray-500 py-10 text-center">
-                  Karosa Mamuk...
+          <div class="flex-1 min-h-0 overflow-y-auto p-4">
+            <div v-if="cartItems.length === 0" class="text-sm text-gray-500 py-10 text-center">
+              Karosa Mamuk...
+            </div>
+
+            <div v-else class="space-y-3">
+              <div
+                v-for="item in cartItems"
+                :key="item.id"
+                class="flex items-center gap-3 p-3 rounded-2xl border border-gray-100"
+              >
+                <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                  <img
+                    :src="item.image || '/placeholder.png'"
+                    class="w-full h-full object-contain p-2"
+                    draggable="false"
+                  />
                 </div>
 
-                <div v-else class="space-y-3">
-                  <div
-                    v-for="item in cartItems"
-                    :key="item.id"
-                    class="flex items-center gap-3 p-3 rounded-2xl border border-gray-100"
+                <div class="flex-1 min-w-0">
+                  <div class="font-extrabold text-sm truncate">{{ item.name }}</div>
+                  <div class="text-xs text-gray-500 mt-0.5">{{ formatPrice(item.price) }}</div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 font-extrabold"
+                    @click="decreaseQty(item.id)"
                   >
-                    <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-                      <img
-                        :src="item.image || '/placeholder.png'"
-                        class="w-full h-full object-contain p-2"
-                        draggable="false"
-                      />
-                    </div>
-
-                    <div class="flex-1 min-w-0">
-                      <div class="font-extrabold text-sm truncate">{{ item.name }}</div>
-                      <div class="text-xs text-gray-500 mt-0.5">{{ formatPrice(item.price) }}</div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                      <button
-                        class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 font-extrabold"
-                        @click="decreaseQty(item.id)"
-                      >
-                        −
-                      </button>
-                      <div class="w-9 text-center font-extrabold">{{ item.qty }}</div>
-                      <button
-                        class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 font-extrabold"
-                        @click="increaseQty(item.id)"
-                      >
-                        ＋
-                      </button>
-                    </div>
-                  </div>
+                    −
+                  </button>
+                  <div class="w-9 text-center font-extrabold">{{ item.qty }}</div>
+                  <button
+                    class="w-10 h-10 rounded-xl border border-gray-200 hover:bg-gray-50 font-extrabold"
+                    @click="increaseQty(item.id)"
+                  >
+                    ＋
+                  </button>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div class="p-4 border-t space-y-3">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">Subtotal</span>
-                  <span class="font-extrabold">{{ formatPrice(totalValue) }}</span>
-                </div>
+          <!-- ✅ Footer pasti kelihatan (kasih pb ekstra untuk Android bottom bar) -->
+          <div class="p-4 border-t space-y-3 pb-24">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-600">Subtotal</span>
+              <span class="font-extrabold">{{ formatPrice(totalValue) }}</span>
+            </div>
 
-                <button
-                  class="w-full h-12 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold disabled:opacity-40"
-                  :disabled="cartCount === 0"
-                  @click="continuePayment"
-                >
-                  Kontinua Pagamentu
-                </button>
+            <button
+              class="w-full h-12 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold disabled:opacity-40"
+              :disabled="cartCount === 0"
+              @click="continuePayment"
+            >
+              Kontinua Pagamentu
+            </button>
 
-                <button
-                  class="w-full h-12 rounded-2xl border border-gray-200 hover:bg-gray-50 font-extrabold disabled:opacity-40"
-                  :disabled="cartCount === 0"
-                  @click="cancelOrder"
-                >
-                  Kansela Order
-                </button>
-              </div>
-            </aside>
-          </Transition>
-        </div>
+            <!-- ✅ Ini yang kamu bilang hilang -->
+            <button
+              class="w-full h-12 rounded-2xl border border-gray-200 hover:bg-gray-50 font-extrabold disabled:opacity-40"
+              :disabled="cartCount === 0"
+              @click="cancelOrder"
+            >
+              Kansela Order
+            </button>
+          </div>
+        </aside>
       </Transition>
-    </Teleport>
+    </div>
+  </Transition>
+</Teleport>
+
 
     <!-- Fly to cart animation -->
     <div
