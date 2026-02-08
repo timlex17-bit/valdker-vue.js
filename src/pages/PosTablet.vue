@@ -403,6 +403,7 @@ const showCartDrawer = ref(false)
 
 const search = ref("")
 const barcodeRef = ref(null)
+const selectedCategory = ref("all")
 
 const flyToCart = ref(false)
 const flyImage = ref("")
@@ -523,10 +524,18 @@ const decreaseQty = (id) => {
 const filteredProducts = computed(() =>
   products.value.filter((p) => {
     const q = search.value.trim().toLowerCase()
-    const nameOk = !q || p.name.toLowerCase().includes(q)
-    return nameOk
+
+    const nameOk =
+      !q || (p.name || "").toLowerCase().includes(q)
+
+    const categoryOk =
+      selectedCategory.value === "all" ||
+      String(p.category_id) === String(selectedCategory.value)
+
+    return nameOk && categoryOk
   })
 )
+
 
 const formatPrice = (value) => `$ ${Number(value || 0).toFixed(2)}`
 const showProductDetail = (product) => (selectedProduct.value = product)
@@ -540,6 +549,12 @@ window.__openCart = () => {
   showCartDrawer.value = true
 }
 
+window.__filterCategory = (id) => {
+  selectedCategory.value = String(id || "all")
+  search.value = ""
+  console.log("[__filterCategory]", selectedCategory.value)
+}
+
 // dipanggil dari Android (btnUser)
 window.__openUserMenu = () => {
   showProfileMenu.value = true
@@ -548,11 +563,15 @@ window.__openUserMenu = () => {
 // Android kirim kategori: native:category
 const onNativeCategory = (e) => {
   const id = String(e?.detail ?? "all")
-  if (id === "all") {
-    // search.value = ""
-  } else {
-    // search.value = ""
-  }
+
+  // ✅ SET STATE KATEGORI
+  selectedCategory.value = id
+
+  // reset search biar konsisten
+  search.value = ""
+
+  console.log("[ANDROID CATEGORY]", id)
+
   focusBarcode()
 }
 
@@ -633,6 +652,7 @@ onMounted(async () => {
       image: p.image_url || "/placeholder.png",
       price: Number(p.sell_price),
       description: p.description || "",
+      category_id: p.category?.id ?? p.category_id ?? null, // ✅ WAJIB
     }))
   } catch (err) {
     console.error("Gagal fetch:", err)
