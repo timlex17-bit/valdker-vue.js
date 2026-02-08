@@ -327,36 +327,36 @@
     </div>
 
     <!-- Product detail modal -->
-    <div
-      v-if="selectedProduct"
-      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-      @click.self="selectedProduct = null"
-    >
-      <div class="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full relative">
-        <button
-          class="absolute top-3 right-3 text-gray-600 hover:text-red-600 text-4xl font-extrabold"
-          @click="selectedProduct = null"
-        >
-          &times;
-        </button>
-
-        <img :src="selectedProduct.image" class="w-full h-56 object-contain mb-4 rounded-xl" draggable="false" />
-        <div class="border-t border-gray-200 my-4"></div>
-
-        <div class="flex justify-between items-center mb-4 gap-3">
-          <h3 class="text-2xl font-extrabold flex-1">{{ selectedProduct.name }}</h3>
+      <div
+        v-if="selectedProduct"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+        @click.self="selectedProduct = null"
+      >
+        <div class="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full relative">
           <button
-            @click.stop="addToCart(selectedProduct, $event)"
-            class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl text-lg font-extrabold flex items-center gap-2 shrink-0"
+            class="absolute top-3 right-3 text-gray-600 hover:text-red-600 text-4xl font-extrabold"
+            @click="selectedProduct = null"
           >
-            ＋ Karosa
+            &times;
           </button>
-        </div>
 
-        <p class="text-gray-700 text-lg mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
-        <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || "La iha deskrisaun" }}</p>
+          <img :src="selectedProduct.image" class="w-full h-56 object-contain mb-4 rounded-xl" draggable="false" />
+          <div class="border-t border-gray-200 my-4"></div>
+
+          <div class="flex justify-between items-center mb-4 gap-3">
+            <h3 class="text-2xl font-extrabold flex-1">{{ selectedProduct.name }}</h3>
+            <button
+              @click.stop="addToCart(selectedProduct, $event)"
+              class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl text-lg font-extrabold flex items-center gap-2 shrink-0"
+            >
+              ＋ Karosa
+            </button>
+          </div>
+
+          <p class="text-gray-700 text-lg mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
+          <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || "La iha deskrisaun" }}</p>
+        </div>
       </div>
-    </div>
 
     <!-- Checkout modal -->
     <Teleport to="body">
