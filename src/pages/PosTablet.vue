@@ -10,7 +10,6 @@
     <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6">
       <!-- LEFT SIDEBAR (✅ DISHIDE DI ANDROID / MOBILE) -->
       <aside class="hidden w-full lg:w-[280px] shrink-0">
-
         <div
           class="bg-white rounded-3xl shadow-sm border p-4 lg:p-6
                  h-auto lg:h-[calc(100vh-3rem)] flex flex-col"
@@ -369,14 +368,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue"
 import { useRouter } from "vue-router"
-import { fetchProducts } from "@/services/api" // ✅ categories dihapus
+import { fetchProducts } from "@/services/api"
 import { useCartStore } from "@/stores/cart"
 import { storeToRefs } from "pinia"
 import Checkout from "@/pages/Checkout.vue"
-
-// ✅ auth
 import { useAuthStore } from "@/stores/auth"
 
 const router = useRouter()
@@ -423,12 +420,10 @@ const goChangePassword = () => {
   closeProfileMenu()
   alert("Change Password (coming soon)")
 }
-
 const goPrivacyPolicy = () => {
   closeProfileMenu()
   alert("Privacy Policy (coming soon)")
 }
-
 const doLogout = () => {
   closeProfileMenu()
   auth.logout()
@@ -524,8 +519,55 @@ const filteredProducts = computed(() =>
 const formatPrice = (value) => `$ ${Number(value || 0).toFixed(2)}`
 const showProductDetail = (product) => (selectedProduct.value = product)
 
+// ===============================
+// ✅ HYBRID: Android -> Vue hooks
+// ===============================
+
+// dipanggil dari Android (btnCart)
+window.__openCart = () => {
+  showCartDrawer.value = true
+}
+
+// dipanggil dari Android (btnUser)
+window.__openUserMenu = () => {
+  showProfileMenu.value = true
+}
+
+// Android kirim kategori: native:category
+const onNativeCategory = (e) => {
+  const id = String(e?.detail ?? "all")
+  // kamu belum pakai category filter lagi, jadi kita pakai cara aman:
+  // "all" = kosongkan search, selain itu isi search dengan nama kategori (dummy)
+  // nanti kalau sudah ada category_id dari API, kamu ganti jadi filter category
+  if (id === "all") {
+    // reset filter
+    // search.value = ""
+  } else {
+    // opsional: contoh behavior cepat
+    // search.value = ""
+  }
+  focusBarcode()
+}
+
+// ===============================
+// ✅ Vue -> Android: kirim badge count
+// ===============================
+const sendCartCountToAndroid = () => {
+  try {
+    const count = Number(cartCount.value || 0)
+    if (window.AndroidBridge && typeof window.AndroidBridge.setCartCount === "function") {
+      window.AndroidBridge.setCartCount(count)
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 const addToCart = (product, event) => {
   cartStore.addToCart(product)
+
+  // ✅ update badge Android setiap add
+  sendCartCountToAndroid()
 
   const sourceElement = event?.currentTarget?.closest?.(".product-card") || event?.currentTarget
   const cartIcon = document.querySelector(".cart-icon")?.getBoundingClientRect()
@@ -549,6 +591,9 @@ onMounted(async () => {
   auth.loadFromStorage()
   document.addEventListener("click", onDocClick, true)
 
+  // ✅ dengarkan event kategori dari Android
+  window.addEventListener("native:category", onNativeCategory)
+
   const token = localStorage.getItem("token")
   if (!token) {
     router.replace({ path: "/login", query: { next: "/tablet" } })
@@ -562,6 +607,15 @@ onMounted(async () => {
     placeholderIndex = (placeholderIndex + 1) % placeholderList.length
     placeholderText.value = placeholderList[placeholderIndex]
   }, 6000)
+
+  // ✅ kirim badge awal
+  sendCartCountToAndroid()
+
+  // ✅ kirim badge setiap cart berubah (qty + add/remove)
+  watch(
+    () => cartItems.value.map((i) => `${i.id}:${i.qty}`).join("|"),
+    () => sendCartCountToAndroid()
+  )
 
   try {
     const productRes = await fetchProducts()
@@ -583,6 +637,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (titleInterval) clearInterval(titleInterval)
   document.removeEventListener("click", onDocClick, true)
+  window.removeEventListener("native:category", onNativeCategory)
 })
 </script>
 
