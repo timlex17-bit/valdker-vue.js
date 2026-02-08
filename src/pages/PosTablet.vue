@@ -8,13 +8,12 @@
   >
     <!-- MAIN WRAP -->
     <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6">
-      <!-- LEFT SIDEBAR (✅ DISHIDE DI ANDROID / MOBILE) -->
+      <!-- LEFT SIDEBAR (hidden di android) -->
       <aside class="hidden w-full lg:w-[280px] shrink-0">
         <div
           class="bg-white rounded-3xl shadow-sm border p-4 lg:p-6
                  h-auto lg:h-[calc(100vh-3rem)] flex flex-col"
         >
-          <!-- Brand -->
           <div class="flex items-center gap-3">
             <div class="w-4 h-4 rounded-full bg-purple-500"></div>
             <div class="text-3xl font-extrabold tracking-tight">valdker</div>
@@ -22,17 +21,14 @@
           </div>
 
           <div class="my-4 lg:my-6 border-t"></div>
-
           <div class="text-sm font-bold text-gray-400 mb-3 lg:mb-4">Menu</div>
 
-          <!-- ✅ Categories DIHILANGKAN -->
           <div class="text-sm text-gray-500">
             Kategoria iha Android (Hybrid).
           </div>
 
           <div class="my-4 lg:my-6 border-t hidden lg:block"></div>
 
-          <!-- Manage (desktop only) -->
           <div class="hidden lg:block">
             <div class="text-sm font-bold text-gray-400 mb-3">Manage</div>
             <button
@@ -51,105 +47,9 @@
           class="bg-white rounded-3xl shadow-sm border p-4 lg:p-6
                 h-auto lg:h-[calc(100vh-3rem)] flex flex-col"
         >
-          <!-- TOP BAR (✅ DIHILANGKAN) -->
+          <!-- TOP BAR (hidden) -->
           <div class="hidden flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <!-- Search -->
-            <div class="flex-1">
-              <div class="relative w-full sm:max-w-[520px]">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">⌕</span>
-                <input
-                  ref="barcodeRef"
-                  v-model="search"
-                  @keydown.enter.prevent="onEnterSearch"
-                  type="text"
-                  placeholder="Search"
-                  class="w-full h-12 rounded-2xl bg-gray-50 border border-gray-100 pl-11 pr-4 text-base outline-none focus:ring-2 focus:ring-orange-400"
-                  inputmode="search"
-                  autocomplete="off"
-                />
-              </div>
-            </div>
-
-            <!-- Right controls -->
-            <div class="flex items-center gap-3 justify-between sm:justify-end">
-              <!-- Offline pill -->
-              <div class="h-12 px-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center gap-3">
-                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                <span class="font-bold text-gray-700">Offline</span>
-                <span class="text-gray-400">📶</span>
-              </div>
-
-              <!-- Cart -->
-              <button
-                class="relative h-12 w-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center hover:bg-gray-100 transition cart-icon"
-                @click="openCartDrawer"
-                title="Cart"
-              >
-                🛒
-                <span
-                  v-if="cartCount > 0"
-                  class="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-orange-500 text-white text-xs font-extrabold flex items-center justify-center"
-                >
-                  {{ cartCount }}
-                </span>
-              </button>
-
-              <!-- ✅ Profile + Dropdown -->
-              <div class="relative" ref="profileWrapRef">
-                <button
-                  type="button"
-                  class="h-12 px-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center gap-3 hover:bg-gray-100 transition"
-                  @click="toggleProfileMenu"
-                >
-                  <div class="w-9 h-9 rounded-full bg-orange-200 flex items-center justify-center">👤</div>
-                  <div class="leading-tight hidden sm:block text-left">
-                    <div class="font-extrabold text-sm">{{ displayName }}</div>
-                    <div class="text-xs text-gray-500">Loja</div>
-                  </div>
-                  <div class="text-gray-400 text-sm ml-1">▾</div>
-                </button>
-
-                <!-- Dropdown -->
-                <Transition name="fade">
-                  <div
-                    v-if="showProfileMenu"
-                    class="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50"
-                  >
-                    <div class="p-3 border-b bg-gray-50">
-                      <div class="text-xs text-gray-500">Signed in as</div>
-                      <div class="font-extrabold text-gray-800 truncate">{{ displayName }}</div>
-                      <div class="text-xs text-gray-500 truncate">{{ displayRole }}</div>
-                    </div>
-
-                    <button
-                      class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3"
-                      @click="goChangePassword"
-                    >
-                      <span>🔑</span>
-                      <span class="font-bold text-gray-700">Change Password</span>
-                    </button>
-
-                    <button
-                      class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3"
-                      @click="goPrivacyPolicy"
-                    >
-                      <span>🛡️</span>
-                      <span class="font-bold text-gray-700">Privacy Policy</span>
-                    </button>
-
-                    <div class="border-t"></div>
-
-                    <button
-                      class="w-full text-left px-4 py-3 hover:bg-red-50 flex items-center gap-3"
-                      @click="doLogout"
-                    >
-                      <span>🚪</span>
-                      <span class="font-extrabold text-red-600">Log Out</span>
-                    </button>
-                  </div>
-                </Transition>
-              </div>
-            </div>
+            ...
           </div>
 
           <div class="mt-4 lg:mt-6 border-t hidden"></div>
@@ -209,18 +109,18 @@
       </main>
     </div>
 
-    <!-- ✅ CART DRAWER (slide) -->
+    <!-- ✅ CART DRAWER (FULLSCREEN & STABLE IN WEBVIEW) -->
     <Teleport to="body">
       <Transition name="fade">
         <div
           v-if="showCartDrawer"
-          class="fixed inset-0 z-[9999]"
+          class="fixed inset-0 z-[99999]"
           style="margin:0; padding:0;"
         >
-          <!-- ✅ klik di luar untuk close -->
+          <!-- overlay -->
           <button
             type="button"
-            class="absolute inset-0 bg-black/40 z-[9999]"
+            class="absolute inset-0 bg-black/40"
             @click="closeCartDrawer"
             aria-label="Close cart"
           ></button>
@@ -228,8 +128,9 @@
           <Transition name="slide-right">
             <aside
               v-if="showCartDrawer"
-              class="absolute right-0 top-0 bottom-0 z-[10000]
-                    w-full sm:w-[420px] bg-white shadow-2xl border-l flex flex-col"
+              class="fixed right-0 top-0 z-[100000]
+                     w-full sm:w-[420px] h-[100dvh]
+                     bg-white shadow-2xl border-l flex flex-col"
               style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);"
             >
               <!-- header -->
@@ -331,36 +232,36 @@
     </div>
 
     <!-- Product detail modal -->
-      <div
-        v-if="selectedProduct"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
-        @click.self="selectedProduct = null"
-      >
-        <div class="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full relative">
+    <div
+      v-if="selectedProduct"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+      @click.self="selectedProduct = null"
+    >
+      <div class="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full relative">
+        <button
+          class="absolute top-3 right-3 text-gray-600 hover:text-red-600 text-4xl font-extrabold"
+          @click="selectedProduct = null"
+        >
+          &times;
+        </button>
+
+        <img :src="selectedProduct.image" class="w-full h-56 object-contain mb-4 rounded-xl" draggable="false" />
+        <div class="border-t border-gray-200 my-4"></div>
+
+        <div class="flex justify-between items-center mb-4 gap-3">
+          <h3 class="text-2xl font-extrabold flex-1">{{ selectedProduct.name }}</h3>
           <button
-            class="absolute top-3 right-3 text-gray-600 hover:text-red-600 text-4xl font-extrabold"
-            @click="selectedProduct = null"
+            @click.stop="addToCart(selectedProduct, $event)"
+            class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl text-lg font-extrabold flex items-center gap-2 shrink-0"
           >
-            &times;
+            ＋ Karosa
           </button>
-
-          <img :src="selectedProduct.image" class="w-full h-56 object-contain mb-4 rounded-xl" draggable="false" />
-          <div class="border-t border-gray-200 my-4"></div>
-
-          <div class="flex justify-between items-center mb-4 gap-3">
-            <h3 class="text-2xl font-extrabold flex-1">{{ selectedProduct.name }}</h3>
-            <button
-              @click.stop="addToCart(selectedProduct, $event)"
-              class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl text-lg font-extrabold flex items-center gap-2 shrink-0"
-            >
-              ＋ Karosa
-            </button>
-          </div>
-
-          <p class="text-gray-700 text-lg mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
-          <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || "La iha deskrisaun" }}</p>
         </div>
+
+        <p class="text-gray-700 text-lg mb-2">Presu: {{ formatPrice(selectedProduct.price) }}</p>
+        <p class="text-gray-600 text-lg">Deskrisaun: {{ selectedProduct.description || "La iha deskrisaun" }}</p>
       </div>
+    </div>
 
     <!-- Checkout modal -->
     <Teleport to="body">
@@ -409,6 +310,9 @@ const search = ref("")
 const barcodeRef = ref(null)
 const selectedCategory = ref("all")
 
+// ✅ tambahan: state cart open untuk lock scroll
+const isCartOpen = computed(() => showCartDrawer.value === true)
+
 const flyToCart = ref(false)
 const flyImage = ref("")
 const flyTop = ref(0)
@@ -419,19 +323,15 @@ const placeholderText = ref(placeholderList[0])
 let placeholderIndex = 0
 let titleInterval = null
 
-// ✅ profile dropdown
+// profile dropdown
 const showProfileMenu = ref(false)
 const profileWrapRef = ref(null)
 
 const displayName = computed(() => auth.user?.username || "User")
 const displayRole = computed(() => auth.user?.role || "cashier")
 
-const toggleProfileMenu = () => {
-  showProfileMenu.value = !showProfileMenu.value
-}
-const closeProfileMenu = () => {
-  showProfileMenu.value = false
-}
+const toggleProfileMenu = () => (showProfileMenu.value = !showProfileMenu.value)
+const closeProfileMenu = () => (showProfileMenu.value = false)
 
 const goChangePassword = () => {
   closeProfileMenu()
@@ -447,14 +347,12 @@ const doLogout = () => {
   router.replace("/login")
 }
 
-// ✅ close dropdown kalau klik di luar
 const onDocClick = (e) => {
   const wrap = profileWrapRef.value
   if (!wrap) return
   if (!wrap.contains(e.target)) closeProfileMenu()
 }
 
-// Normalize cart items
 const cartItems = computed(() => {
   const raw = Array.isArray(cart.value) ? cart.value : []
   return raw
@@ -488,8 +386,16 @@ const onEnterSearch = () => focusBarcode()
 
 function onCheckoutSuccess() {
   showCheckout.value = false
-  showCartDrawer.value = false
+  closeCartDrawer()
   focusBarcode()
+}
+
+const sendCartOpenToAndroid = (open) => {
+  try {
+    if (window.AndroidBridge && typeof window.AndroidBridge.setCartOpen === "function") {
+      window.AndroidBridge.setCartOpen(open ? 1 : 0)
+    }
+  } catch (e) {}
 }
 
 const openCartDrawer = () => {
@@ -502,17 +408,7 @@ const closeCartDrawer = () => {
   sendCartOpenToAndroid(false)
 }
 
-window.__closeCart = () => {
-  closeCartDrawer()
-}
-
-const sendCartOpenToAndroid = (open) => {
-  try {
-    if (window.AndroidBridge && typeof window.AndroidBridge.setCartOpen === "function") {
-      window.AndroidBridge.setCartOpen(open ? 1 : 0)
-    }
-  } catch (e) {}
-}
+window.__closeCart = () => closeCartDrawer()
 
 const continuePayment = () => {
   closeCartDrawer()
@@ -547,32 +443,20 @@ const decreaseQty = (id) => {
 const filteredProducts = computed(() =>
   products.value.filter((p) => {
     const q = search.value.trim().toLowerCase()
-
-    const nameOk =
-      !q || (p.name || "").toLowerCase().includes(q)
-
-    const categoryOk =
-      selectedCategory.value === "all" ||
-      String(p.category_id) === String(selectedCategory.value)
-
+    const nameOk = !q || (p.name || "").toLowerCase().includes(q)
+    const categoryOk = selectedCategory.value === "all" || String(p.category_id) === String(selectedCategory.value)
     return nameOk && categoryOk
   })
 )
 
-
 const formatPrice = (value) => `$ ${Number(value || 0).toFixed(2)}`
 const showProductDetail = (product) => (selectedProduct.value = product)
 
-// ===============================
-// ✅ HYBRID: Android -> Vue hooks
-// ===============================
-
-// dipanggil dari Android (btnCart)
+// HYBRID hooks
 window.__openCart = () => {
   showCartDrawer.value = true
   sendCartOpenToAndroid(true)
 }
-
 
 window.__filterCategory = (id) => {
   selectedCategory.value = String(id || "all")
@@ -580,44 +464,30 @@ window.__filterCategory = (id) => {
   console.log("[__filterCategory]", selectedCategory.value)
 }
 
-// dipanggil dari Android (btnUser)
 window.__openUserMenu = () => {
   showProfileMenu.value = true
 }
 
-// Android kirim kategori: native:category
 const onNativeCategory = (e) => {
   const id = String(e?.detail ?? "all")
-
-  // ✅ SET STATE KATEGORI
   selectedCategory.value = id
-
-  // reset search biar konsisten
   search.value = ""
-
   console.log("[ANDROID CATEGORY]", id)
-
   focusBarcode()
 }
 
-// ===============================
-// ✅ Vue -> Android: kirim badge count
-// ===============================
+// Vue -> Android badge
 const sendCartCountToAndroid = () => {
   try {
     const count = Number(cartCount.value || 0)
     if (window.AndroidBridge && typeof window.AndroidBridge.setCartCount === "function") {
       window.AndroidBridge.setCartCount(count)
     }
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) {}
 }
 
 const addToCart = (product, event) => {
   cartStore.addToCart(product)
-
-  // ✅ update badge Android setiap add
   sendCartCountToAndroid()
 
   const sourceElement = event?.currentTarget?.closest?.(".product-card") || event?.currentTarget
@@ -641,9 +511,17 @@ const addToCart = (product, event) => {
 onMounted(async () => {
   auth.loadFromStorage()
   document.addEventListener("click", onDocClick, true)
-
-  // ✅ dengarkan event kategori dari Android
   window.addEventListener("native:category", onNativeCategory)
+
+  // ✅ lock scroll saat cart open (ini bikin gak “geser kebawah” di webview)
+  watch(
+    () => isCartOpen.value,
+    (open) => {
+      document.documentElement.style.overflow = open ? "hidden" : ""
+      document.body.style.overflow = open ? "hidden" : ""
+    },
+    { immediate: true }
+  )
 
   const token = localStorage.getItem("token")
   if (!token) {
@@ -659,10 +537,8 @@ onMounted(async () => {
     placeholderText.value = placeholderList[placeholderIndex]
   }, 6000)
 
-  // ✅ kirim badge awal
   sendCartCountToAndroid()
 
-  // ✅ kirim badge setiap cart berubah (qty + add/remove)
   watch(
     () => cartItems.value.map((i) => `${i.id}:${i.qty}`).join("|"),
     () => sendCartCountToAndroid()
@@ -670,14 +546,13 @@ onMounted(async () => {
 
   try {
     const productRes = await fetchProducts()
-
     products.value = productRes.data.map((p) => ({
       id: p.id,
       name: p.name,
       image: p.image_url || "/placeholder.png",
       price: Number(p.sell_price),
       description: p.description || "",
-      category_id: p.category?.id ?? p.category_id ?? null, // ✅ WAJIB
+      category_id: p.category?.id ?? p.category_id ?? null,
     }))
   } catch (err) {
     console.error("Gagal fetch:", err)
@@ -690,10 +565,33 @@ onBeforeUnmount(() => {
   if (titleInterval) clearInterval(titleInterval)
   document.removeEventListener("click", onDocClick, true)
   window.removeEventListener("native:category", onNativeCategory)
+  document.documentElement.style.overflow = ""
+  document.body.style.overflow = ""
 })
 </script>
 
 <style scoped>
+/* ✅ RESET kecil untuk ngalahin CSS default Vite yang bikin body flex-center */
+:global(html),
+:global(body) {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+:global(body) {
+  display: block !important;   /* << ini yang paling penting */
+  place-items: initial !important;
+}
+
+:global(#app) {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: initial !important;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.15s ease;
