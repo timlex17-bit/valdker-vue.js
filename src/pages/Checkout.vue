@@ -115,7 +115,7 @@ function buildPayload() {
   const safeTotal = toMoney(total.value || 0)
 
   return {
-    customer: 1,
+    // ✅ customer DIHAPUS (walk-in)
     payment_method: backendPayment,
     subtotal: safeTotal,
     discount: "0.00",
