@@ -168,7 +168,7 @@
                   <div class="w-9 h-9 rounded-full bg-orange-200 flex items-center justify-center">👤</div>
                   <div class="leading-tight hidden sm:block text-left">
                     <div class="font-extrabold text-sm">{{ displayName }}</div>
-                    <div class="text-xs text-gray-500">Loja</div>
+                    <div class="text-xs text-gray-500">Store</div>
                   </div>
                   <div class="text-gray-400 text-sm ml-1">▾</div>
                 </button>
