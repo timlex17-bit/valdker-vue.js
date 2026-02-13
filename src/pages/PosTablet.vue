@@ -58,9 +58,9 @@
                   class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20"
                   :class="selectedCategory === null ? '' : 'bg-gray-50'"
                 >
-                  <span class="text-lg">🍽️</span>
+                  <span class="text-lg">All</span>
                 </div>
-                <div class="font-extrabold">All</div>
+                <div class="font-extrabold">Product</div>
               </button>
 
               <button
