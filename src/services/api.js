@@ -1,92 +1,67 @@
 import axios from "axios"
 
-// ✅ base URL:
-// - DEV: baca dari .env.development (VITE_API_BASE_URL)
-// - PROD: baca dari .env.production (VITE_API_BASE_URL)
-// - fallback terakhir: kalau dev -> localhost:8000, kalau prod -> onrender
 const isDev = import.meta.env.DEV
 
+// ✅ kalau tidak set env, default DEV pakai IP LAN server Django, PROD pakai Render
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  (isDev ? "http://127.0.0.1:8000" : "https://valdker.onrender.com")
+  console.log("API_BASE =", API_BASE)
+  (isDev ? "http://192.168.1.197:8000" : "https://valdker.onrender.com")
 
-// ✅ daftar endpoint PUBLIC (tanpa token)
 const PUBLIC_ENDPOINTS = [
-  "/api/auth/login",   // login
-  "/api/auth/register" // kalau ada
+  "/api/auth/login",
+  "/api/auth/register",
 ]
 
-// helper: cek URL termasuk public endpoint atau tidak
-const isPublicEndpoint = (url = "") => {
-  return PUBLIC_ENDPOINTS.some((p) => url.includes(p))
-}
+const isPublicEndpoint = (url = "") => PUBLIC_ENDPOINTS.some((p) => url.includes(p))
 
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 60000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 })
 
-api.interceptors.request.use(
-  (config) => {
-    const url = config.url || ""
-    const full = `${config.baseURL || ""}${url}`
+api.interceptors.request.use((config) => {
+  const url = config.url || ""
+  const full = `${config.baseURL || ""}${url}`
 
-    // ✅ JANGAN kirim token ke endpoint public (login/register)
-    if (isPublicEndpoint(url) || isPublicEndpoint(full)) {
-      console.log("PUBLIC REQ (skip auth):", config.method?.toUpperCase(), full)
-      return config
-    }
-
-    const token = localStorage.getItem("token")
-    console.log("TOKEN(localStorage):", token)
-
-    if (token) {
-      config.headers = config.headers || {}
-      config.headers.Authorization = `Token ${token}`
-      console.log("AUTH(header set):", config.headers.Authorization)
-    } else {
-      console.log("NO TOKEN — request will be unauthenticated")
-    }
-
-    console.log("REQ:", config.method?.toUpperCase(), full)
+  if (isPublicEndpoint(url) || isPublicEndpoint(full)) {
+    console.log("PUBLIC REQ (skip auth):", config.method?.toUpperCase(), full)
     return config
-  },
-  (error) => Promise.reject(error)
-)
+  }
+
+  const token = localStorage.getItem("token")
+  console.log("TOKEN(localStorage):", token)
+
+  if (token) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Token ${token}`
+    console.log("AUTH(header set):", config.headers.Authorization)
+  } else {
+    console.log("NO TOKEN — request will be unauthenticated")
+  }
+
+  console.log("REQ:", config.method?.toUpperCase(), full)
+  return config
+})
 
 api.interceptors.response.use(
-  (response) => response,
+  (res) => {
+    console.log("RES:", res.status, res.config.url, "len:", Array.isArray(res.data) ? res.data.length : "-")
+    return res
+  },
   (error) => {
     const status = error?.response?.status
     const url = error?.config?.url || ""
     const full = `${error?.config?.baseURL || ""}${url}`
-
-    if (status === 401) {
-      console.warn("401 Unauthorized:", full)
-
-      // ✅ kalau 401 di endpoint selain login, biasanya token invalid/expired
-      // Untuk debug, saya tidak hapus token dulu.
-      // Kalau kamu mau otomatis logout, aktifkan block ini:
-      /*
-      if (!isPublicEndpoint(url) && !isPublicEndpoint(full)) {
-        localStorage.removeItem("token")
-        localStorage.removeItem("user")
-        // window.location.href = "/login"
-      }
-      */
-    }
-
+    console.error("ERR:", status, full, error?.response?.data || error.message)
     return Promise.reject(error)
   }
 )
 
-// ✅ API functions
+// functions
 export const loginApi = (payload) => api.post("/api/auth/login", payload)
-
 export const fetchProducts = () => api.get("/api/products/")
 export const fetchCategories = () => api.get("/api/categories/")
 export const fetchBanners = () => api.get("/api/banners/")
