@@ -2,7 +2,6 @@
   <div class="max-w-xl mx-auto p-6">
     <h1 class="text-2xl font-bold mb-6">🧾 Checkout</h1>
 
-    <!-- Metode -->
     <div class="mb-4">
       <label class="font-medium text-gray-700 mb-2 block">Metode Pagamentu:</label>
       <select v-model="payment" class="w-full border rounded px-4 py-2">
@@ -14,20 +13,20 @@
       </select>
     </div>
 
-    <!-- Total -->
     <div class="mb-6">
       <label class="font-medium text-gray-700 block">Total Pagamentu:</label>
-      <div class="text-xl font-bold mt-1">$ {{ total.toFixed(2) }}</div>
+      <div class="text-xl font-bold mt-1">$ {{ totalNumber.toFixed(2) }}</div>
+      <p class="text-xs text-gray-500 mt-1">
+        Items: {{ androidCart.length }} | Token: {{ androidToken ? "YES" : "NO" }}
+      </p>
     </div>
 
-    <!-- QRIS -->
     <div v-if="payment === 'qris'" class="mb-6 text-center">
       <h3 class="font-semibold mb-2">📱 SCAN QRIS MOSAN</h3>
       <img src="@/assets/qris.png" alt="QRIS" class="w-48 mx-auto border rounded shadow" />
     </div>
 
-    <!-- Upload bukti -->
-    <div v-if="['bnctl', 'mandiri', 'bnu'].includes(payment)" class="mb-6">
+    <div v-if="['bnctl','mandiri','bnu'].includes(payment)" class="mb-6">
       <label class="block font-medium text-gray-700 mb-2">🖼️ Upload Prova Transferensia</label>
       <input type="file" @change="handleUpload" accept="image/*" class="w-full border rounded px-3 py-2" />
       <p v-if="previewImage" class="mt-2 text-sm text-gray-600">✅ Prova upload ona ho susesu</p>
@@ -35,129 +34,216 @@
 
     <button
       @click="submitCheckout"
-      :disabled="submitting || cartItems.length === 0"
+      :disabled="submitting || androidCart.length === 0 || !androidToken"
       class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded font-semibold disabled:opacity-40"
     >
       {{ submitting ? "⏳ Saving..." : "✅ Kontinua Pagamentu" }}
     </button>
+
+    <!-- DEBUG ACTIONS -->
+    <div class="mt-4 flex gap-2">
+      <button class="flex-1 border rounded py-2" @click="pingAndroid">Ping Android</button>
+      <button class="flex-1 border rounded py-2" @click="reloadPayload">Reload Payload</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { useCartStore } from "@/stores/cart"
-import { storeToRefs } from "pinia"
-import { ref, computed, nextTick } from "vue"
-import { createOrder } from "@/services/api"
+import { ref, computed, onMounted, onBeforeUnmount } from "vue"
+import axios from "axios"
 
-const emit = defineEmits(["success"]) // ✅ penting
-
-const cartStore = useCartStore()
-const { total, items } = storeToRefs(cartStore)
-const cartItems = computed(() => items.value || [])
+// ✅ your backend base
+const API_BASE = "https://valdker.onrender.com/api"
 
 const payment = ref("cash")
 const previewImage = ref(null)
 const submitting = ref(false)
 
-function handleUpload(event) {
-  const file = event.target.files[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => (previewImage.value = reader.result)
-  reader.readAsDataURL(file)
-}
+// ✅ payload from Android
+const androidToken = ref("")
+const androidCart = ref([]) // [{product, quantity}]
+const androidSubtotal = ref(0)
+const androidCustomerId = ref(null)
 
-/**
- * ✅ helper supaya DecimalField aman:
- * - ubah ke number
- * - fix ke 2 desimal
- * - return STRING "1.80" (paling aman buat DRF DecimalField)
- */
+// -----------------------------
+// helpers
+// -----------------------------
 function toMoney(value) {
   const n = Number(value)
   if (!Number.isFinite(n)) return "0.00"
   return n.toFixed(2)
 }
 
-function getProductIdFromCartItem(it) {
-  return (
-    it?.product?.id ??
-    it?.product_id ??
-    it?.productId ??
-    it?.productID ??
-    it?.product_pk ??
-    it?.id
-  )
+function handleUpload(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => (previewImage.value = reader.result)
+  reader.readAsDataURL(file)
 }
 
-function buildPayload() {
-  const backendPayment = ["cash", "qris", "card"].includes(payment.value) ? payment.value : "cash"
+function logAndroid(msg) {
+  try {
+    if (window.Android?.log) window.Android.log(String(msg))
+  } catch (_) {}
+}
 
-  const mappedItems = cartItems.value.map((it) => {
-    const productId = getProductIdFromCartItem(it)
-    return {
-      product: productId,
-      quantity: Number(it.qty || it.quantity || 1),
-      // ✅ amanin juga price jadi 2 desimal
-      price: toMoney(it.price || it.sell_price || 0),
-      weight_unit: null,
-    }
+function readAndroidPayload() {
+  // from injection
+  const p = window.__CHECKOUT_PAYLOAD__
+  if (!p) return false
+
+  androidToken.value = (p.token || "").trim()
+  androidSubtotal.value = Number(p.subtotal || 0) || 0
+  androidCustomerId.value = p.customer_id ?? null
+
+  // cart expected: [{product, quantity}]
+  androidCart.value = Array.isArray(p.cart) ? p.cart : []
+
+  logAndroid("[Vue] payload loaded token=" + (androidToken.value ? "YES" : "NO") + " items=" + androidCart.value.length)
+  return true
+}
+
+function reloadPayload() {
+  const ok = readAndroidPayload()
+  if (!ok) alert("Payload belum ada. Pastikan Android sudah inject.")
+}
+
+const totalNumber = computed(() => {
+  // prefer subtotal from Android (source of truth from CartManager)
+  const s = Number(androidSubtotal.value)
+  if (Number.isFinite(s) && s > 0) return s
+
+  // fallback: compute from items if backend price fetch later
+  return 0
+})
+
+// -----------------------------
+// Fetch product price from backend (secure)
+// -----------------------------
+async function fetchSellPrice(productId) {
+  const res = await axios.get(`${API_BASE}/products/${productId}/`, {
+    headers: { Authorization: `Token ${androidToken.value}` },
   })
-
-  const badIndex = mappedItems.findIndex((x) => !x.product)
-  if (badIndex !== -1) {
-    console.log("CART ITEMS RAW:", cartItems.value)
-    console.log("MAPPED ITEMS:", mappedItems)
-    throw new Error(`Cart item index ${badIndex} tidak punya product id.`)
-  }
-
-  // ✅ subtotal/total wajib aman 2 desimal agar tidak melebihi max_digits
-  const safeTotal = toMoney(total.value || 0)
-
-  return {
-    // ✅ customer DIHAPUS (walk-in)
-    payment_method: backendPayment,
-    subtotal: safeTotal,
-    discount: "0.00",
-    tax: "0.00",
-    total: safeTotal,
-    notes: "",
-    is_paid: true,
-    items: mappedItems,
-  }
+  // DRF returns sell_price as string (decimal)
+  return res.data?.sell_price ?? "0.00"
 }
 
 async function submitCheckout() {
-  if (cartItems.value.length === 0) return alert("Cart kosong!")
+  if (!androidToken.value) {
+    alert("❌ Token kosong. Silakan login ulang di Android.")
+    return
+  }
+  if (androidCart.value.length === 0) {
+    alert("Cart kosong!")
+    return
+  }
   if (["bnctl", "mandiri", "bnu"].includes(payment.value) && !previewImage.value) {
-    return alert("❌ Harap unggah bukti transfer terlebih dahulu!")
+    alert("❌ Harap unggah bukti transfer terlebih dahulu!")
+    return
   }
 
   submitting.value = true
   try {
-    const payload = buildPayload()
-    console.log("PAYLOAD CHECKOUT:", payload)
+    // Build items by fetching price from backend (BEST PRACTICE)
+    const items = []
+    for (const it of androidCart.value) {
+      const pid = Number(it.product)
+      const qty = Number(it.quantity || 1)
 
-    const res = await createOrder(payload)
-    console.log("ORDER SAVED:", res.data)
+      if (!pid || !qty) throw new Error("Cart item invalid: " + JSON.stringify(it))
+
+      const sellPrice = await fetchSellPrice(pid)
+
+      items.push({
+        product: pid,
+        quantity: qty,
+        price: toMoney(sellPrice),
+        weight_unit: null,
+      })
+    }
+
+    const safeTotal = toMoney(androidSubtotal.value || 0)
+    const backendPayment = ["cash", "qris", "card", "bnctl", "mandiri", "bnu"].includes(payment.value)
+      ? payment.value
+      : "cash"
+
+    const orderPayload = {
+      customer: androidCustomerId.value ?? null,
+      payment_method: backendPayment,
+      subtotal: safeTotal,
+      discount: "0.00",
+      tax: "0.00",
+      total: safeTotal,
+      notes: "",
+      is_paid: true,
+      items,
+    }
+
+    console.log("ORDER PAYLOAD:", orderPayload)
+    logAndroid("[Vue] posting order...")
+
+    const res = await axios.post(`${API_BASE}/orders/`, orderPayload, {
+      headers: { Authorization: `Token ${androidToken.value}` },
+    })
+
+    const orderId = res.data?.id
+    logAndroid("[Vue] order success id=" + orderId)
 
     alert("✅ Pagamentu Susesu! Order saved.")
-    cartStore.clearCart()
 
-    await nextTick()
-    console.log("✅ EMIT success() untuk tutup modal")
-    emit("success")
+    // ✅ IMPORTANT: Call Android bridge
+    if (window.Android?.onCheckoutSuccess) {
+      window.Android.onCheckoutSuccess(String(orderId ?? ""))
+    } else {
+      alert("Android bridge not found. (window.Android.onCheckoutSuccess)")
+    }
   } catch (err) {
     console.error("Checkout error:", err)
-    if (!err?.response) {
+    logAndroid("[Vue] checkout error: " + (err?.message || "unknown"))
+
+    if (err?.response?.data) {
+      alert("❌ Checkout gagal:\n" + JSON.stringify(err.response.data, null, 2))
+    } else {
       alert("❌ Checkout gagal:\n" + (err?.message || "Unknown error"))
-      return
     }
-    const data = err?.response?.data
-    console.log("BACKEND ERROR DATA:", data)
-    alert("❌ Checkout gagal:\n" + JSON.stringify(data, null, 2))
   } finally {
     submitting.value = false
   }
 }
+
+// ✅ debug to confirm bridge works
+function pingAndroid() {
+  try {
+    if (window.Android?.log) window.Android.log("Ping from Vue OK")
+    if (window.Android?.onCheckoutSuccess) window.Android.onCheckoutSuccess("999")
+    else alert("Android bridge not found")
+  } catch (e) {
+    alert("Ping error: " + e.message)
+  }
+}
+
+// Listen event from Android injection
+function onPayloadEvent(e) {
+  try {
+    const d = e?.detail
+    if (!d) return
+    window.__CHECKOUT_PAYLOAD__ = d
+    readAndroidPayload()
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("android-checkout-payload", onPayloadEvent)
+  // initial read (in case injection already happened)
+  setTimeout(() => {
+    readAndroidPayload()
+  }, 50)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("android-checkout-payload", onPayloadEvent)
+})
 </script>
