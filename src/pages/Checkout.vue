@@ -158,10 +158,10 @@ function readAndroidPayload() {
   } else if (Array.isArray(p.cart)) {
     // legacy cart -> convert to items with default type
     androidItems.value = p.cart.map((it) => ({
-      product: it.product,
-      quantity: it.quantity,
-      order_type: defaultOrderType.value,
-    }))
+    product: it.product,
+    quantity: it.quantity,
+    order_type: normalizeOrderType(it.order_type || it.orderType || defaultOrderType.value),
+  }))
   } else {
     androidItems.value = []
   }
