@@ -2,6 +2,44 @@
   <div class="max-w-xl mx-auto p-6">
     <h1 class="text-2xl font-bold mb-6">🧾 Checkout</h1>
 
+    <!-- ✅ NEW: Order Type summary -->
+    <div class="mb-4 border rounded p-4 bg-gray-50">
+      <div class="font-semibold text-gray-800 mb-2">🍽️ Order Type</div>
+
+      <div class="flex flex-wrap gap-2">
+        <span class="px-3 py-1 rounded-full text-sm border"
+              :class="defaultOrderType === 'DINE_IN' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'">
+          Dine-In
+        </span>
+        <span class="px-3 py-1 rounded-full text-sm border"
+              :class="defaultOrderType === 'TAKE_OUT' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'">
+          Take-Out
+        </span>
+        <span class="px-3 py-1 rounded-full text-sm border"
+              :class="defaultOrderType === 'DELIVERY' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'">
+          Delivery
+        </span>
+      </div>
+
+      <!-- extra fields (shown only if relevant) -->
+      <div v-if="needsTableNumber" class="mt-3">
+        <label class="text-sm font-medium text-gray-700 block mb-1">Table Number</label>
+        <input v-model="tableNumber" class="w-full border rounded px-3 py-2" placeholder="e.g. A1" />
+      </div>
+
+      <div v-if="needsDeliveryAddress" class="mt-3">
+        <label class="text-sm font-medium text-gray-700 block mb-1">Delivery Address</label>
+        <textarea v-model="deliveryAddress" class="w-full border rounded px-3 py-2" rows="2" placeholder="Enter delivery address"></textarea>
+
+        <label class="text-sm font-medium text-gray-700 block mb-1 mt-2">Delivery Fee</label>
+        <input v-model="deliveryFee" type="number" step="0.01" class="w-full border rounded px-3 py-2" placeholder="0.00" />
+      </div>
+
+      <p class="text-xs text-gray-500 mt-2">
+        Items override will be sent per item when available.
+      </p>
+    </div>
+
     <div class="mb-4">
       <label class="font-medium text-gray-700 mb-2 block">Metode Pagamentu:</label>
       <select v-model="payment" class="w-full border rounded px-4 py-2">
@@ -17,7 +55,7 @@
       <label class="font-medium text-gray-700 block">Total Pagamentu:</label>
       <div class="text-xl font-bold mt-1">$ {{ totalNumber.toFixed(2) }}</div>
       <p class="text-xs text-gray-500 mt-1">
-        Items: {{ androidCart.length }} | Token: {{ androidToken ? "YES" : "NO" }}
+        Items: {{ androidItems.length }} | Token: {{ androidToken ? "YES" : "NO" }}
       </p>
     </div>
 
@@ -34,7 +72,7 @@
 
     <button
       @click="submitCheckout"
-      :disabled="submitting || androidCart.length === 0 || !androidToken"
+      :disabled="submitting || androidItems.length === 0 || !androidToken"
       class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded font-semibold disabled:opacity-40"
     >
       {{ submitting ? "⏳ Saving..." : "✅ Kontinua Pagamentu" }}
@@ -61,9 +99,15 @@ const submitting = ref(false)
 
 // ✅ payload from Android
 const androidToken = ref("")
-const androidCart = ref([]) // [{product, quantity}]
+const androidItems = ref([]) // [{product, quantity, order_type?}] OR from legacy cart [{product, quantity}]
 const androidSubtotal = ref(0)
 const androidCustomerId = ref(null)
+
+// ✅ NEW: order type header (global)
+const defaultOrderType = ref("TAKE_OUT") // default fallback
+const tableNumber = ref("")
+const deliveryAddress = ref("")
+const deliveryFee = ref("0.00")
 
 // -----------------------------
 // helpers
@@ -72,6 +116,12 @@ function toMoney(value) {
   const n = Number(value)
   if (!Number.isFinite(n)) return "0.00"
   return n.toFixed(2)
+}
+
+function normalizeOrderType(v) {
+  const s = String(v || "").trim().toUpperCase()
+  if (s === "DINE_IN" || s === "TAKE_OUT" || s === "DELIVERY") return s
+  return "TAKE_OUT"
 }
 
 function handleUpload(event) {
@@ -89,7 +139,6 @@ function logAndroid(msg) {
 }
 
 function readAndroidPayload() {
-  // from injection
   const p = window.__CHECKOUT_PAYLOAD__
   if (!p) return false
 
@@ -97,10 +146,34 @@ function readAndroidPayload() {
   androidSubtotal.value = Number(p.subtotal || 0) || 0
   androidCustomerId.value = p.customer_id ?? null
 
-  // cart expected: [{product, quantity}]
-  androidCart.value = Array.isArray(p.cart) ? p.cart : []
+  // ✅ NEW: read default order type + extra
+  defaultOrderType.value = normalizeOrderType(p.default_order_type || p.defaultOrderType || "TAKE_OUT")
+  tableNumber.value = (p.table_number || p.tableNumber || "").toString()
+  deliveryAddress.value = (p.delivery_address || p.deliveryAddress || "").toString()
+  deliveryFee.value = toMoney(p.delivery_fee ?? p.deliveryFee ?? 0)
 
-  logAndroid("[Vue] payload loaded token=" + (androidToken.value ? "YES" : "NO") + " items=" + androidCart.value.length)
+  // ✅ Prefer items (new) else fallback to cart (legacy)
+  if (Array.isArray(p.items)) {
+    androidItems.value = p.items
+  } else if (Array.isArray(p.cart)) {
+    // legacy cart -> convert to items with default type
+    androidItems.value = p.cart.map((it) => ({
+      product: it.product,
+      quantity: it.quantity,
+      order_type: defaultOrderType.value,
+    }))
+  } else {
+    androidItems.value = []
+  }
+
+  logAndroid(
+    "[Vue] payload loaded token=" +
+      (androidToken.value ? "YES" : "NO") +
+      " items=" +
+      androidItems.value.length +
+      " defaultType=" +
+      defaultOrderType.value
+  )
   return true
 }
 
@@ -110,12 +183,18 @@ function reloadPayload() {
 }
 
 const totalNumber = computed(() => {
-  // prefer subtotal from Android (source of truth from CartManager)
   const s = Number(androidSubtotal.value)
   if (Number.isFinite(s) && s > 0) return s
-
-  // fallback: compute from items if backend price fetch later
   return 0
+})
+
+const needsTableNumber = computed(() => {
+  // if any item is dine-in
+  return androidItems.value.some((it) => normalizeOrderType(it.order_type) === "DINE_IN") || defaultOrderType.value === "DINE_IN"
+})
+
+const needsDeliveryAddress = computed(() => {
+  return androidItems.value.some((it) => normalizeOrderType(it.order_type) === "DELIVERY") || defaultOrderType.value === "DELIVERY"
 })
 
 // -----------------------------
@@ -125,7 +204,6 @@ async function fetchSellPrice(productId) {
   const res = await axios.get(`${API_BASE}/products/${productId}/`, {
     headers: { Authorization: `Token ${androidToken.value}` },
   })
-  // DRF returns sell_price as string (decimal)
   return res.data?.sell_price ?? "0.00"
 }
 
@@ -134,7 +212,7 @@ async function submitCheckout() {
     alert("❌ Token kosong. Silakan login ulang di Android.")
     return
   }
-  if (androidCart.value.length === 0) {
+  if (androidItems.value.length === 0) {
     alert("Cart kosong!")
     return
   }
@@ -143,15 +221,24 @@ async function submitCheckout() {
     return
   }
 
+  // ✅ validate required fields based on type rules
+  if (needsTableNumber.value && !String(tableNumber.value || "").trim()) {
+    alert("❌ Table number wajib untuk Dine-In.")
+    return
+  }
+  if (needsDeliveryAddress.value && !String(deliveryAddress.value || "").trim()) {
+    alert("❌ Delivery address wajib untuk Delivery.")
+    return
+  }
+
   submitting.value = true
   try {
-    // Build items by fetching price from backend (BEST PRACTICE)
     const items = []
-    for (const it of androidCart.value) {
+    for (const it of androidItems.value) {
       const pid = Number(it.product)
       const qty = Number(it.quantity || 1)
 
-      if (!pid || !qty) throw new Error("Cart item invalid: " + JSON.stringify(it))
+      if (!pid || !qty) throw new Error("Item invalid: " + JSON.stringify(it))
 
       const sellPrice = await fetchSellPrice(pid)
 
@@ -160,6 +247,9 @@ async function submitCheckout() {
         quantity: qty,
         price: toMoney(sellPrice),
         weight_unit: null,
+
+        // ✅ IMPORTANT: send per-item type
+        order_type: normalizeOrderType(it.order_type || defaultOrderType.value),
       })
     }
 
@@ -177,11 +267,18 @@ async function submitCheckout() {
       total: safeTotal,
       notes: "",
       is_paid: true,
+
+      // ✅ IMPORTANT: header fields
+      default_order_type: normalizeOrderType(defaultOrderType.value),
+      table_number: String(tableNumber.value || ""),
+      delivery_address: String(deliveryAddress.value || ""),
+      delivery_fee: toMoney(deliveryFee.value),
+
       items,
     }
 
     console.log("ORDER PAYLOAD:", orderPayload)
-    logAndroid("[Vue] posting order...")
+    logAndroid("[Vue] posting order with order_type...")
 
     const res = await axios.post(`${API_BASE}/orders/`, orderPayload, {
       headers: { Authorization: `Token ${androidToken.value}` },
@@ -192,7 +289,6 @@ async function submitCheckout() {
 
     alert("✅ Pagamentu Susesu! Order saved.")
 
-    // ✅ IMPORTANT: Call Android bridge
     if (window.Android?.onCheckoutSuccess) {
       window.Android.onCheckoutSuccess(String(orderId ?? ""))
     } else {
@@ -212,7 +308,6 @@ async function submitCheckout() {
   }
 }
 
-// ✅ debug to confirm bridge works
 function pingAndroid() {
   try {
     if (window.Android?.log) window.Android.log("Ping from Vue OK")
@@ -223,7 +318,6 @@ function pingAndroid() {
   }
 }
 
-// Listen event from Android injection
 function onPayloadEvent(e) {
   try {
     const d = e?.detail
@@ -237,7 +331,6 @@ function onPayloadEvent(e) {
 
 onMounted(() => {
   window.addEventListener("android-checkout-payload", onPayloadEvent)
-  // initial read (in case injection already happened)
   setTimeout(() => {
     readAndroidPayload()
   }, 50)
