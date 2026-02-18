@@ -9,16 +9,25 @@
       <div class="flex flex-wrap gap-2">
         <span
           class="px-3 py-1 rounded-full text-sm border"
+          :class="defaultOrderType === 'GENERAL' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'"
+        >
+          General
+        </span>
+
+        <span
+          class="px-3 py-1 rounded-full text-sm border"
           :class="defaultOrderType === 'DINE_IN' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'"
         >
           Dine-In
         </span>
+
         <span
           class="px-3 py-1 rounded-full text-sm border"
           :class="defaultOrderType === 'TAKE_OUT' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'"
         >
           Take-Out
         </span>
+
         <span
           class="px-3 py-1 rounded-full text-sm border"
           :class="defaultOrderType === 'DELIVERY' ? 'bg-yellow-200 border-yellow-400' : 'bg-white'"
@@ -37,7 +46,16 @@
         <textarea v-model="deliveryAddress" class="w-full border rounded px-3 py-2" rows="2"></textarea>
 
         <label class="text-sm font-medium text-gray-700 block mb-1 mt-2">Delivery Fee</label>
-        <input v-model="deliveryFee" type="number" step="0.01" class="w-full border rounded px-3 py-2" />
+        <input
+          v-model="deliveryFee"
+          type="number"
+          step="0.01"
+          class="w-full border rounded px-3 py-2"
+        />
+
+        <p class="text-xs text-gray-500 mt-2">
+          Total Pagamentu = Subtotal + Delivery Fee
+        </p>
       </div>
 
       <p class="text-xs text-gray-500 mt-2">
@@ -57,13 +75,16 @@
       </select>
     </div>
 
-    <!-- Total -->
+    <!-- ✅ Total -->
     <div class="mb-6">
       <label class="font-medium text-gray-700 block">Total Pagamentu:</label>
       <div class="text-xl font-bold mt-1">$ {{ totalNumber.toFixed(2) }}</div>
-      <p class="text-xs text-gray-500 mt-1">
-        Items: {{ androidItems.length }} | Token: {{ androidToken ? "YES" : "NO" }}
-      </p>
+
+      <div class="text-xs text-gray-500 mt-1">
+        <div>Subtotal: $ {{ subtotalNumber.toFixed(2) }}</div>
+        <div v-if="deliveryFeeNumber > 0">Delivery Fee: $ {{ deliveryFeeNumber.toFixed(2) }}</div>
+        <div>Items: {{ androidItems.length }} | Token: {{ androidToken ? "YES" : "NO" }}</div>
+      </div>
     </div>
 
     <!-- ✅ DEBUG: Order type per item -->
@@ -80,6 +101,7 @@
         <div class="text-sm font-semibold">
           <span v-if="it.order_type === 'DINE_IN'">🍽️ DINE_IN</span>
           <span v-else-if="it.order_type === 'DELIVERY'">🚚 DELIVERY</span>
+          <span v-else-if="it.order_type === 'GENERAL'">🧾 GENERAL</span>
           <span v-else>🥡 TAKE_OUT</span>
         </div>
       </div>
@@ -137,7 +159,7 @@ function toMoney(value) {
 
 function normalizeOrderType(v) {
   const s = String(v || "").trim().toUpperCase()
-  if (["DINE_IN", "TAKE_OUT", "DELIVERY"].includes(s)) return s
+  if (["GENERAL", "DINE_IN", "TAKE_OUT", "DELIVERY"].includes(s)) return s
   return "TAKE_OUT"
 }
 
@@ -163,6 +185,7 @@ function readAndroidPayload() {
   androidSubtotal.value = Number(p.subtotal || 0) || 0
   androidCustomerId.value = p.customer_id ?? null
 
+  // ✅ allow GENERAL from cart
   defaultOrderType.value = normalizeOrderType(
     p.default_order_type || p.defaultOrderType || "TAKE_OUT"
   )
@@ -171,7 +194,6 @@ function readAndroidPayload() {
   deliveryAddress.value = (p.delivery_address || p.deliveryAddress || "").toString()
   deliveryFee.value = toMoney(p.delivery_fee ?? p.deliveryFee ?? 0)
 
-  // ✅ NORMALIZED ITEMS (FIX UTAMA)
   const src =
     Array.isArray(p.items) ? p.items :
     Array.isArray(p.cart) ? p.cart :
@@ -180,28 +202,44 @@ function readAndroidPayload() {
   androidItems.value = src.map((it) => ({
     product: it.product,
     quantity: it.quantity,
+    // per item must still be DINE_IN/TAKE_OUT/DELIVERY (or GENERAL if you ever send it)
     order_type: normalizeOrderType(it.order_type || it.orderType || defaultOrderType.value),
   }))
 
   console.log("ANDROID ITEMS:", androidItems.value)
-  logAndroid(`[Vue] payload loaded token=${androidToken.value ? "YES" : "NO"} items=${androidItems.value.length} defaultType=${defaultOrderType.value}`)
+  logAndroid(
+    `[Vue] payload loaded token=${androidToken.value ? "YES" : "NO"} items=${androidItems.value.length} defaultType=${defaultOrderType.value}`
+  )
   return true
 }
 
-const totalNumber = computed(() => {
+// ✅ numbers
+const subtotalNumber = computed(() => {
   const s = Number(androidSubtotal.value)
   return Number.isFinite(s) && s > 0 ? s : 0
 })
 
+const deliveryFeeNumber = computed(() => {
+  // only apply fee when delivery section is relevant; otherwise keep 0
+  const n = Number(deliveryFee.value)
+  if (!needsDeliveryAddress.value) return 0
+  return Number.isFinite(n) && n > 0 ? n : 0
+})
+
+const totalNumber = computed(() => {
+  return subtotalNumber.value + deliveryFeeNumber.value
+})
+
 const needsTableNumber = computed(() => {
-  // if any item is dine-in OR header is dine-in
-  return androidItems.value.some((it) => normalizeOrderType(it.order_type) === "DINE_IN") ||
-    defaultOrderType.value === "DINE_IN"
+  // ✅ do NOT trigger table when header is GENERAL
+  const anyDineIn = androidItems.value.some((it) => normalizeOrderType(it.order_type) === "DINE_IN")
+  return anyDineIn || defaultOrderType.value === "DINE_IN"
 })
 
 const needsDeliveryAddress = computed(() => {
-  return androidItems.value.some((it) => normalizeOrderType(it.order_type) === "DELIVERY") ||
-    defaultOrderType.value === "DELIVERY"
+  // ✅ do NOT trigger delivery when header is GENERAL (unless items actually have delivery)
+  const anyDelivery = androidItems.value.some((it) => normalizeOrderType(it.order_type) === "DELIVERY")
+  return anyDelivery || defaultOrderType.value === "DELIVERY"
 })
 
 // -----------------------------
@@ -257,12 +295,15 @@ async function submitCheckout() {
         price: toMoney(sellPrice),
         weight_unit: null,
 
-        // ✅ IMPORTANT: send per-item type
+        // ✅ send per-item type (DINE_IN/TAKE_OUT/DELIVERY or GENERAL if you ever send it)
         order_type: normalizeOrderType(it.order_type || defaultOrderType.value),
       })
     }
 
-    const safeTotal = toMoney(androidSubtotal.value || 0)
+    const safeSubtotal = toMoney(subtotalNumber.value)
+    const safeDeliveryFee = toMoney(deliveryFeeNumber.value)
+    const safeTotal = toMoney(totalNumber.value)
+
     const backendPayment = ["cash", "qris", "card", "bnctl", "mandiri", "bnu"].includes(payment.value)
       ? payment.value
       : "cash"
@@ -270,10 +311,13 @@ async function submitCheckout() {
     const orderPayload = {
       customer: androidCustomerId.value ?? null,
       payment_method: backendPayment,
-      subtotal: safeTotal,
+
+      // ✅ totals: total includes delivery fee automatically
+      subtotal: safeSubtotal,
       discount: "0.00",
       tax: "0.00",
       total: safeTotal,
+
       notes: "",
       is_paid: true,
 
@@ -281,7 +325,7 @@ async function submitCheckout() {
       default_order_type: normalizeOrderType(defaultOrderType.value),
       table_number: String(tableNumber.value || ""),
       delivery_address: String(deliveryAddress.value || ""),
-      delivery_fee: toMoney(deliveryFee.value),
+      delivery_fee: safeDeliveryFee,
 
       items,
     }
